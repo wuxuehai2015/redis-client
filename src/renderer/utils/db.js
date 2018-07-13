@@ -11,7 +11,7 @@ function createConnection(address, port, pass = '') {
     let client = redis.createClient(port, address)
 
     client.on('error', function (error) {
-        console.log(error)
+        alert(error)
     })
 
     pass && client.auth(pass)

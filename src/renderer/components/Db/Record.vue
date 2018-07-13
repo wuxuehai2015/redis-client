@@ -11,22 +11,17 @@
         </tr>
         </thead>
         <tbody v-if="list.length === 0">
-            <tr>
-                <td style="text-align: center" colspan="4"><h5>数据库为空</h5></td>
-            </tr>
+        <tr>
+            <td style="text-align: center" colspan="4"><h5>数据库为空</h5></td>
+        </tr>
         </tbody>
         <tbody v-else>
-            <tr v-for="item in list">
-                <td>{{item.key}}</td>
-                <td>{{item.type}}</td>
-                <td>{{item.content}}</td>
-                <td>{{item.expire}}</td>
-            </tr>
-        </tbody>
-        <tbody v-if="client == null">
-            <tr>
-                <td style="text-align: center" colspan="4"><h5>请选择数据库</h5></td>
-            </tr>
+        <tr v-for="item in list">
+            <td>{{item.key}}</td>
+            <td>{{item.type}}</td>
+            <td>{{item.content}}</td>
+            <td>{{item.expire}}</td>
+        </tr>
         </tbody>
     </table>
 </template>
@@ -68,29 +63,54 @@
         })
     })
 
-    import{
-        keys,
-        type,
-        ttl,
-        get
-    } from '../../utils/db'
+    import{keys, type, ttl, get} from '../../utils/db'
+    import{getDbList, getDb, createConnection, closeConnection} from '../../utils/db'
     import Vue from 'vue'
     export default{
         data (){
             return {
                 client: null,
+                db_key: null,
+                dbs: null,
                 list: [],
             }
         },
+        props: [
+            'dbIndex',
+        ],
         created: function () {
-            let self = this
-            this.$hub.$on('connection', function (client) {
-                self.client = client
-                self.getFields()
-            });
             this.$hub.$on('export', function (client) {
                 self.export()
             });
+        },
+
+        watch: {
+            '$route.query.dbIndex': function (db_key) {
+
+                //关闭之前的链接
+                if (this.db_key !== db_key) {
+                    this.client && closeConnection(this.client)
+                    this.client = null
+                }
+
+                this.db_key = db_key;
+
+                //获取数据库配置
+                let info = getDb(this.dbs[db_key].name)
+
+                //链接数据库
+                this.client = createConnection(info.address, info.port, info.pass)
+
+                //读取数据
+                this.getFields()
+            }
+        },
+        beforeDestroy: function () {
+            if (this.client !== null) {
+                closeConnection(this.client)
+                console.log('数据库已关闭')
+                this.client = null
+            }
         },
         methods: {
             getFields: async function () {
@@ -130,5 +150,17 @@
                 alert('导出')
             }
         },
+        mounted: function () {
+
+            let temp = getDbList()
+            let dbs = []
+
+            temp.forEach((value, key) => {
+                dbs.push({name: value, isActive: false})
+            })
+
+            this.dbs = dbs
+
+        }
     }
 </script>

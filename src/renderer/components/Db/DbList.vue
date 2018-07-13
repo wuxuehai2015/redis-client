@@ -1,23 +1,36 @@
 <style>
+    a{
+        color: #737475;
+        text-decoration:none;
+    }
+
+    .nav-group-item-title{
+        display: inline-block;
+        width:100%;
+    }
 </style>
 <template>
     <nav class="nav-group">
         <h5 class="nav-group-title">Favorites</h5>
 
         <span class="nav-group-item" @click="selectDb(key)" v-for="(db,key) in dbs" v-bind:class="{ active: db.isActive }">
-            <span class="icon icon-database"></span>{{db.name}}
+            <router-link :to="{path:'db', query : {dbIndex:key}}">
+                <span class="icon icon-database"></span>
+                <span class="nav-group-item-title">
+                    {{db.name}}
+                </span>
+            </router-link>
         </span>
 
     </nav>
 </template>
 <script>
-    import{getDbList,getDb,createConnection,closeConnection} from '../../utils/db'
+    import{getDbList} from '../../utils/db'
     import Vue from 'vue'
     export default {
         data (){
             return {
                 dbs: [],
-                client: null
             };
         },
         methods: {
@@ -29,14 +42,6 @@
                 })
 
                 this.dbs[key].isActive = true
-
-                let info = getDb(this.dbs[key].name)
-
-                this.client && closeConnection(this.client)
-
-                this.client = createConnection(info.address, info.port, info.pass)
-
-                this.$hub.$emit('connection', this.client); //触发事件
             }
         },
         mounted:function () {
